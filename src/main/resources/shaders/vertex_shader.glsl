@@ -7,7 +7,8 @@ out vec3 fragPos;
 out vec3 vertexColor;
 out vec2 vertexTextureCoord;
 
-uniform mat4 transform;
+uniform mat4 model;
+uniform mat4 view;
 
 void main()
 {
@@ -15,6 +16,6 @@ void main()
     vertexColor        = aVertexColor;
     vertexTextureCoord = aVertexTextureCoord;
 
-    gl_Position = transform * vec4(aPos, 1.0);
+    gl_Position = view * model *  vec4(aPos, 1.0);
 
 };

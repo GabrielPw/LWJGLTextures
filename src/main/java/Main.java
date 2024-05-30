@@ -7,14 +7,16 @@ import org.lwjgl.opengl.GL20;
 import org.lwjgl.opengl.GL30;
 
 import java.nio.FloatBuffer;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
 import static org.lwjgl.glfw.GLFW.*;
 
 public class Main {
 
     private static Shader shader;
-    private static Matrix4f transform = new Matrix4f();
-
+    private static Matrix4f view = new Matrix4f();
 
     public static void main(String[] args) {
 
@@ -23,16 +25,13 @@ public class Main {
         double previousTime = glfwGetTime();
         int frameCount = 0;
 
-        String textureBluePath     = "src/main/resources/assets/tile32/tileblue.png";
-        String textureGreenPath = "src/main/resources/assets/tile32/tilegreen.png";
-
         int[] allTextures = new int[2];
-        int textureBlue = TextureLoader.loadTexture(textureBluePath);
-        int textureGreen = TextureLoader.loadTexture(textureGreenPath);
+        int textureBlue  = TextureLoader.loadTexture(TexturePaths.textureTileBlue, GL30.GL_TEXTURE0);
+        int textureGreen = TextureLoader.loadTexture(TexturePaths.textureTileGreen, GL30.GL_TEXTURE0);
         allTextures[0] = textureBlue;
         allTextures[1] = textureGreen;
 
-        transform.identity();
+        view.identity();
         shader = new Shader("vertex_shader.glsl", "fragment_shader.glsl");
         shader.use();
         shader.addUniform1i("imgtexture", 0); // textureUnit 0.
@@ -45,6 +44,12 @@ public class Main {
 
         Vector3f posQuad1 = new Vector3f(-0.5f, 0, 0);
         Vector3f posQuad2 = new Vector3f( 0.5f, 0, 0);
+        Tile t1 = new Tile(posQuad1, TexturePaths.textureTileBlue);
+        Tile t2 = new Tile(posQuad2, TexturePaths.textureTileGreen);
+
+        List<Tile> tiles = new ArrayList<>(Arrays.asList(t1, t2));
+
+        Vector3f viewTranslation = new Vector3f(0, 0.f, 0.f);
         while (!glfwWindowShouldClose(window.getID())) {
 
             GL11.glClearColor((20.f / 255), (40.f / 255), (51.f / 255), 1.0f);
@@ -62,30 +67,29 @@ public class Main {
 
             float timeValue = (float)glfwGetTime();
 
+            view.identity();
+            view.translate(viewTranslation);
+            view.scale(0.4f);
+
+            viewTranslation.x += Math.cos(timeValue) / 60.f;
             shader.use();
-
-            transform.identity();
-            transform.translate(posQuad1);
-            transform.scale(new Vector3f(1, 1, 1));
-
-            shader.addUniformMatrix4fv("transform", transform);
             shader.addUniform1f("time", timeValue);
-            GL30.glBindTexture(GL11.GL_TEXTURE_2D, textureBlue);
-            render(VAO, VBO, EBO);
+            shader.addUniformMatrix4fv("view", view);
 
-            transform.identity();
-            transform.translate(posQuad2);
-            transform.scale(new Vector3f(-1, 1, 1));
+            for (Tile tile : tiles) {
 
-            shader.addUniformMatrix4fv("transform", transform);
-            shader.addUniform1f("time", timeValue);
-            GL30.glBindTexture(GL11.GL_TEXTURE_2D, textureGreen);
-            render(VAO, VBO, EBO);
+                tile.update(shader);
+                GL30.glBindTexture(GL11.GL_TEXTURE_2D, tile.getTextureID());
+                render(VAO, VBO, EBO);
+            }
 
             glfwPollEvents();
             glfwSwapBuffers(window.getID());
         }
 
+        for (Tile tile : tiles) {
+            tile.destroy();
+        }
         destroy(VAO, VBO, EBO, allTextures);
 
         GL.createCapabilities();
@@ -103,6 +107,8 @@ public class Main {
 
         GL30.glBindBuffer(GL30.GL_ARRAY_BUFFER, VBO);
         GL11.glDrawElements(GL11.GL_TRIANGLES, Primitives.squareIndices.length, GL11.GL_UNSIGNED_INT, 0);
+
+        GL30.glBindVertexArray(0);
     }
 
 

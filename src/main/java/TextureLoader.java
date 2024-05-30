@@ -10,7 +10,7 @@ import java.nio.file.Paths;
 
 public class TextureLoader {
 
-    public static int loadTexture(String path) {
+    public static int loadTexture(String path, int glTextureUnit) {
 
         if (!Paths.get(path).toFile().exists()) {
             System.err.println("Texture file not found: " + path);
@@ -28,7 +28,7 @@ public class TextureLoader {
 
         // Create a new OpenGL texture
         int textureId = GL30.glGenTextures();
-        GL30.glActiveTexture(GL13.GL_TEXTURE0);
+        GL30.glActiveTexture(glTextureUnit);
         GL30.glBindTexture(GL11.GL_TEXTURE_2D, textureId);
 
         // Set texture parameters
